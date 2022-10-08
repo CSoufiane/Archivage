@@ -160,12 +160,13 @@ void CopySrcToTempDir(const std::string& source ,const std::string& temporaryDir
         const auto& pathSrc = entry.path();
         if(fs::is_directory(pathSrc))
         {
-            if(!Match(pathSrc.filename().string(), pattern))
+            auto currentSource = pathSrc.filename().string();
+            if(!Match(currentSource, pattern))
             {
                 continue;
             }
             std::filesystem::path newOut(temporaryDir + "\\" + pathSrc.filename().string());
-            std::cout << "Selection du repertoire: '" << newOut.string() << "' car il correspond au pattern '" << pattern << "'\n";
+            std::cout << "Selection du repertoire: '" << currentSource << "' pour sauvegarde car il correspond au pattern '" << pattern << "'\n";
             fs::copy(pathSrc, newOut, fs::copy_options::overwrite_existing | fs::copy_options::recursive);
         }
     }
