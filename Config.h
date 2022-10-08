@@ -6,6 +6,7 @@
 class Config {
     std::map<std::string, std::string> _Values;
     std::map<std::string, std::string> _Descriptions;
+    std::vector<std::string> _archiveLineSelector;
     static const std::string& GetEmpty(){
         static std::string empty;
         return empty;
@@ -26,9 +27,11 @@ class Config {
         _Descriptions["--TEMP"] = "Repertoire temporaire pour traitement";
         _Descriptions["--PATTERN"] = "Expression pour identifier les repertoires a sauver (example: \"^LA FOR.*\", identifie tous les repertoire dans le nom commence par \"la for\")";
         _Values["--PATTERN"] = "^LA FOR.*";
-        _Descriptions["--OUT"] = "chemin de l'archivage ex: c:\archivage-_DATE_.zip, va se transformer en c:\archivage-2022-10-04.zip";
+        _Descriptions["--OUT"] = "chemin de l'archivage ex: c:\\archivage-_DATE_.zip, va se transformer en c:\\archivage-2022-10-04.zip";
         _Descriptions["--COMMAND"] = "Commande à executer pour archiver ex: 'C:\\Program Files\\7-Zip\\7z.exe' a -tzip _OUT_ _TEMP_";
         _Descriptions["--HELP"] = "Display this help";
+        _Descriptions["--ARCHIVEHASH"] = "Commande qui génére un hash de l'archive ex: 7z l -slt \"__FILE__\"";
+        _Descriptions["--ARCHIVELINESELECTOR"] = "Pattern (expression régulière) qui selectione les lignes de hash";
     }
     Config(int c, char ** argc)
     {
@@ -41,7 +44,10 @@ class Config {
             if(value.empty()) continue;
             if(value[0] == '-'){
                 ToUpper(value);
-                if(_Descriptions.find(value)!=_Descriptions.end())
+                if(value == "--ARCHIVELINESELECTOR"){
+                    _archiveLineSelector.push_back(argc[++i]);
+                }
+                else if(_Descriptions.find(value)!=_Descriptions.end())
                 {
                     pValue = &(_Values[value]);
                     continue;
@@ -76,6 +82,12 @@ class Config {
     }
     const std::string& GetCommand() const {
         return GetOrEmpty("--COMMAND");
+    }
+    const std::string& GetArchiveHash() const {
+        return GetOrEmpty("--ARCHIVEHASH");
+    }
+    const std::vector<std::string>& GetHashLineSelectors() const {
+        return _archiveLineSelector;
     }
     const bool GetHelp() const {
         return Get("--HELP") != nullptr;

@@ -4,7 +4,7 @@
 #include <memory>
 #include <stdexcept>
 #include <array>
-
+#include <set>
 #include <chrono>
 
 void ToUpper(std::string& chain)
@@ -49,4 +49,34 @@ bool Replace(std::string& str, const std::string& from, const std::string& to) {
         return false;
     str.replace(start_pos, from.length(), to);
     return true;
+}
+
+bool HasSameContent(const std::vector<std::string>& v1, const std::vector<std::string>& v2){
+    if(v1.size()!=v2.size()){
+        return false;
+    }
+
+    std::set<std::string> hashes;
+    for(const auto& value: v1){
+        hashes.insert(value);
+    }
+
+    for(const auto& value: v2){
+        auto isInserted = hashes.insert(value).second;
+        if(isInserted){
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void AddMatchingPattern(std::vector<std::string>& result, const std::string& st, const std::regex& r){
+    for (std::sregex_iterator i = std::sregex_iterator(st.begin(), st.end(), r);
+        i != std::sregex_iterator();
+        ++i)
+    {
+        std::smatch m = *i;
+        result.push_back(m.str());
+    }
 }
