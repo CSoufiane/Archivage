@@ -80,3 +80,4 @@ void AddMatchingPattern(std::vector<std::string>& result, const std::string& st,
         result.push_back(m.str());
     }
 }
+
