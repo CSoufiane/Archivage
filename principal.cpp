@@ -3,6 +3,7 @@
 #include <filesystem>
 
 #include "Config.h"
+#include "Utils.h"
 
 namespace fs = std::filesystem;
 
@@ -14,38 +15,14 @@ void DisplayHelp(const Config& config){
     }    
 }
 
-std::string GetLatestFileMatchingPattern(const std::string filePattern){
-    std::filesystem::path path(filePattern);
-    auto pattern = path.filename().string();
-    ToUpper(pattern);
-    std::string result;
-    for (const auto & entry : fs::directory_iterator(path.parent_path()))
-    {
-        const auto& pathSrc = entry.path();
-        if(fs::is_regular_file(pathSrc)){
-            auto currentFile = pathSrc.filename().string();
-            if(!Match(currentFile, pattern))
-            {
-                continue;
-            }
-            if(result.empty()){
-                result = pathSrc.string();
-            }
-            else {
-                if(result.compare(currentFile) < 0){
-                    result = pathSrc.string();
-                }
-            }
-        }
-    }
-    return result;
-}
 
 void CopySrcToTempDir(const std::string& source ,const std::string& temporaryDir, const std::string& pattern);
 
 void ExtractToLocation(const std::string& locationPath, const Config& config);
 
 std::vector<std::string> BuildHash(const std::string& filePath, std::string hashCommandBuilder, const std::vector<std::string>& hashLineSelectors);
+
+std::string GetLatestFileMatchingPattern(const std::string& filePattern);
 
 int main(int c, char ** argc)
 {
@@ -87,7 +64,7 @@ int main(int c, char ** argc)
     }
     else{
         std::filesystem::path archivePath(archiveLocation);
-        auto temporaryOut = temporaryDir + "\\" + archivePath.filename().string();
+        auto temporaryOut = std::filesystem::path(temporaryDir).append(archivePath.filename().string()).string();
         ExtractToLocation(temporaryOut, config);
 
         auto outPattern = config.GetOut();
@@ -109,6 +86,7 @@ int main(int c, char ** argc)
         }
 
         fs::copy(temporaryOut, archiveLocation, fs::copy_options::overwrite_existing | fs::copy_options::recursive);
+        //fs::rename(temporaryOut, archiveLocation);
         std::cout << "Archivage fait dans: '" << archiveLocation << "'\n";
     }
 
@@ -165,7 +143,8 @@ void CopySrcToTempDir(const std::string& source ,const std::string& temporaryDir
             {
                 continue;
             }
-            std::filesystem::path newOut(temporaryDir + "\\" + pathSrc.filename().string());
+            std::filesystem::path newOut(temporaryDir);
+            newOut.append(pathSrc.filename().string());
             std::cout << "Selection du repertoire: '" << currentSource << "' pour sauvegarde car il correspond au pattern '" << pattern << "'\n";
             fs::copy(pathSrc, newOut, fs::copy_options::overwrite_existing | fs::copy_options::recursive);
         }

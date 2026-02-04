@@ -6,6 +6,11 @@
 #include <array>
 #include <set>
 #include <chrono>
+#include <algorithm>
+#include <filesystem>
+
+
+namespace fs = std::filesystem;
 
 void ToUpper(std::string& chain)
 {
@@ -24,7 +29,7 @@ bool Match(std::string filename, const std::string& pattern)
 std::string Exec(const char* cmd) {
     std::array<char, 128> buffer;
     std::string result;
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
+    std::unique_ptr<FILE, decltype(&pclose) > pipe(popen(cmd, "r"), pclose);
     if (!pipe) {
         throw std::runtime_error("popen() failed!");
     }
@@ -81,3 +86,61 @@ void AddMatchingPattern(std::vector<std::string>& result, const std::string& st,
     }
 }
 
+std::vector<std::string> GetFilesMatchingPattern(const std::string& filePattern){
+    std::vector<std::string> result;
+    std::filesystem::path path(filePattern);
+    auto pattern = path.filename().string();
+    ToUpper(pattern);
+
+    for (const auto & entry : fs::directory_iterator(path.parent_path()))
+    {
+        const auto& pathSrc = entry.path();
+        if(fs::is_regular_file(pathSrc)){
+            auto currentFile = pathSrc.filename().string();
+            if(!Match(currentFile, pattern))
+            {
+                continue;
+            }
+            result.emplace_back(std::filesystem::relative(pathSrc).string());
+        } else if(fs::is_directory(pathSrc)){
+            std::string target = pathSrc.filename().string();
+            auto allDigit = true;
+            for(char c : target){
+                allDigit = std::isdigit(c);
+                if(allDigit == false) break;
+            }
+
+            if(!allDigit){
+                continue;
+            }
+            
+            auto newFilePatern = std::filesystem::path(std::filesystem::relative(pathSrc).string()).append(pattern).string();
+            auto newResults = GetFilesMatchingPattern(newFilePatern);
+            newResults.reserve(result.size() + newResults.size());
+            for(auto& cfile : newResults){
+                result.emplace_back(std::filesystem::relative(cfile).string());
+            }
+        }
+    }
+    return result;
+}
+
+
+bool IsLower(const std::string& p1, const std::string& p2){
+    auto n1 = std::filesystem::path(p1).filename().string();
+    auto n2 = std::filesystem::path(p1).filename().string();
+    return n1.compare(n2) < 0;
+}
+
+
+std::string GetLatestFileMatchingPattern(const std::string& filePattern){
+    std::string result;
+    auto files = GetFilesMatchingPattern(filePattern);
+    for(const auto& f : files){
+        if(result.empty() || IsLower(result, f)){
+            result = f;
+        }
+    }
+
+    return result;
+}
